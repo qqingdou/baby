@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>明明讲故事</title>
+    <meta name="color-scheme" content="light dark">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=0,viewport-fit=cover">
+    <script type="text/javascript" src="scripts/mm_voices.js?v=202101281058"></script>
+    <link rel="stylesheet" href="APlayer.min.css?v=202101281058">
+</head>
+<body>
+<div id="aplayer"></div>
+</body>
+</html>
+<script src="APlayer.min.js?v=202101281058"></script>
+<script src="js/zepto.min.js?v=202101281058"></script>
+<script>
+
+    var audios  =   [];
+
+    for(var index in voices){
+        var voiceItem       =  voices[index];
+        voiceItem.name      =   voiceItem.name.replace(/\d+\./, '');
+        voiceItem.name      =   voiceItem.name.replace(/(&nbsp;|&nbsp)/, '');
+        voiceItem.artist    =   voiceItem.artist.length <= 0 ? ' ' : voiceItem.artist;
+        audios.push(voiceItem);
+    }
+
+    var page        =   1;
+    var pageSize    =   30;
+    var count       =   audios.length;
+    var pageCount   =   Math.ceil(count / pageSize);
+
+    const ap = new APlayer({
+        theme:'#FB98FF',
+        listMaxHeight:  '100%',
+        listFolded  :   false,
+//        fixed:  true,
+        container: document.getElementById('aplayer'),
+        audio:getPageData(page)
+        /*audio: [
+            {
+                name: '【晚安故事】面包超人的秘密',
+                artist: '',
+                url: 'https://res.wx.qq.com/voice/getvoice?mediaid=MzI0NzA0MjIyMF8yNjUyNTYzOTIy',
+                cover: 'images/sweet.jpg'
+            },
+            {
+                name: '【晚安故事】艾玛和小玫（独一无二的自己）',
+                //artist: 'artist',
+                url: 'https://res.wx.qq.com/voice/getvoice?mediaid=MzI0NzA0MjIyMF8yNjUyNTYwODA4',
+                cover: 'images/sweet.jpg'
+            }
+        ]*/
+    });
+
+
+    function init() {
+        $('.aplayer-body').css('position', 'fixed');
+        $('.aplayer-body').css('top', '0');
+        $('.aplayer-body').css('z-index', '99');
+        $('.aplayer-body').css('background-color', '#ffffff');
+        $('.aplayer-body').css('width', '91.7%');
+        $('.aplayer-body').css('margin', '0 5px');
+        $('.aplayer-list').css('margin-top', '4rem');
+    }
+
+    ap.on('loadstart', init);
+    ap.on('loadeddata', init);
+    
+    var isRunning   =   false;
+
+    function getPageData(page) {
+        var end =   (page - 1) * pageSize   +   pageSize;
+        end     =   (end    >   count ? count   :   end);
+        var tempData    =   [];
+        for(var index = (page - 1) * pageSize;index < end; index++){
+            tempData.push(audios[index]);
+        }
+        return  tempData;
+    }
+
+    function lazyload() { //监听页面滚动事件
+        var documentHeight = document.documentElement.offsetHeight; //文档总高度
+        var seeHeight = document.documentElement.clientHeight; //可见区域高度
+        var scrollTop = document.documentElement.scrollTop || document.body.scrollTop; //滚动条距离顶部高度
+        if (documentHeight - seeHeight - scrollTop < 100) {
+            page++;
+
+            var voiceData   =   getPageData(page);
+            ap.list.add(voiceData);
+
+            isRunning   =   false;
+        }
+    }
+    // 简单的节流函数
+    //fun 要执行的函数
+    //delay 延迟
+    //time  在time时间内必须执行一次
+    function throttle(fun, delay, time) {
+
+        if(isRunning){
+            return  false;
+        }
+
+        isRunning   =   true;
+        var timeout,
+            startTime = new Date();
+        return function () {
+            var context = this,
+                args = arguments,
+                curTime = new Date();
+            clearTimeout(timeout);
+            // 如果达到了规定的触发时间间隔，触发 handler
+            if (curTime - startTime >= time) {
+                fun.apply(context, args);
+                startTime = curTime;
+                // 没达到触发间隔，重新设定定时器
+            } else {
+                timeout = setTimeout(function () {
+                    fun.apply(context, args);
+                }, delay);
+            }
+        };
+    };
+    //采用了节流函数
+    window.addEventListener('scroll', throttle(lazyload, 500, 1000));
+</script>
