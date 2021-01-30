@@ -7,16 +7,54 @@
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=0,viewport-fit=cover">
     <script type="text/javascript" src="scripts/mm_voices.js?v=202101281058"></script>
     <link rel="stylesheet" href="APlayer.min.css?v=202101281058">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <style type="text/css">
+        .search{
+            margin-top: 5rem;
+        }
+        .search-navbar-form{
+            padding: 0;
+        }
+
+        @media (min-width: 576px) {}
+
+        @media (min-width: 768px) { }
+
+        @media (min-width: 992px) { }
+
+        @media (min-width: 1200px) {
+            .search{
+                margin-top: 7rem;
+            }
+        }
+
+    </style>
 </head>
 <body>
-<div id="aplayer"></div>
+<div>
+    <div class="container-fluid search">
+        　 <!-- 搜索框 -->
+        <form class="navbar-form navbar-left search-navbar-form" role="search" action="" onsubmit="onSumit();return false">
+            <div class="form-group">
+                <div class="col-xs-8 col-md-8 col-xl-8">
+                    <input type="text" id="keyword" class="form-control" placeholder="请输入故事名称">
+                </div>
+                <div class="col-xs-4 col-md-4 col-xl-4">
+                    <input type="button" class="btn btn-default" id="search" value="搜索"/>
+                </div>
+            </div>
+
+        </form>
+    </div>
+    <div id="aplayer"></div>
+</div>
 </body>
 </html>
 <script src="APlayer.min.js?v=202101281058"></script>
 <script src="js/zepto.min.js?v=202101281058"></script>
 <script>
 
-    var audios  =   [];
+    var audios      =   [];
 
     for(var index in voices){
         var voiceItem       =  voices[index];
@@ -26,10 +64,14 @@
         audios.push(voiceItem);
     }
 
+    var existVoices =   audios;
+
     var page        =   1;
     var pageSize    =   30;
-    var count       =   audios.length;
-    var pageCount   =   Math.ceil(count / pageSize);
+
+    function getCount() {
+        return  existVoices.length;
+    }
 
     const ap = new APlayer({
         theme:'#FB98FF',
@@ -56,13 +98,44 @@
 
 
     function init() {
-        $('.aplayer-body').css('position', 'fixed');
-        $('.aplayer-body').css('top', '0');
-        $('.aplayer-body').css('z-index', '99');
-        $('.aplayer-body').css('background-color', '#ffffff');
-        $('.aplayer-body').css('width', '91.7%');
-        $('.aplayer-body').css('margin', '0 5px');
-        $('.aplayer-list').css('margin-top', '4rem');
+        $('.aplayer-body').css({
+        'position'          :       'fixed' ,
+        'top'               :       '0' ,
+        'background-color'  :       '#ffffff' ,
+        'width'             :       '96%' ,
+        'margin'            :       '0 5px',
+        'z-index'           :       '9999'
+        });
+        //$('.aplayer-list').css('margin-top', '4rem');
+    }
+
+    function onSumit() {
+        onSearch($('#keyword').val().trim());
+    }
+
+    function onSearch(keyword) {
+        page    =   1;
+        ap.list.clear();
+        if(keyword.length <= 0){
+            existVoices     =   audios;
+            var voiceData   =   getPageData(page);
+            ap.list.add(voiceData);
+        }else{
+            var tempSearchData  =   [];
+            for(var index = 0,count=audios.length;index < count;index++){
+                var item  = audios[index];
+                var name    =   item.name;
+                var pattern =   new RegExp(keyword, 'i');
+                if(pattern.test(name)){
+                    tempSearchData.push(item);
+                }
+            }
+            if(tempSearchData.length > 0){
+                existVoices =   tempSearchData;
+                ap.list.add(getPageData(page));
+                $('.aplayer-list').show();
+            }
+        }
     }
 
     ap.on('loadstart', init);
@@ -70,12 +143,17 @@
     
     var isRunning   =   false;
 
+    $('#search').on('click', function () {
+        onSearch($('#keyword').val().trim());
+    });
+
     function getPageData(page) {
-        var end =   (page - 1) * pageSize   +   pageSize;
-        end     =   (end    >   count ? count   :   end);
+        var count       =   getCount();
+        var end         =   (page - 1) * pageSize   +   pageSize;
+        end             =   (end    >   count ? count   :   end);
         var tempData    =   [];
         for(var index = (page - 1) * pageSize;index < end; index++){
-            tempData.push(audios[index]);
+            tempData.push(existVoices[index]);
         }
         return  tempData;
     }
@@ -125,4 +203,11 @@
     };
     //采用了节流函数
     window.addEventListener('scroll', throttle(lazyload, 500, 1000));
+
+    $(document).ready(function () {
+        init();
+        setTimeout(function () {
+            window.scrollTo(0,0);
+        }, 300);
+    });
 </script>
